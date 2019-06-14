@@ -4,6 +4,7 @@ import rosbag
 from  anytree import Node, RenderTree
 import texttable
 import re
+import json
 
 def extract_topics(bag_file):
 	return bag_file.get_type_and_topic_info().topics
@@ -57,7 +58,7 @@ def extract_parrent_and_child_frames(frame_roots,parent_frames,child_frames):
 							d[world_frame].append(current_frame)
 	return d
 
-def match_topic_types(items):
+def match_topic_types(items, fileloc):
 	topicmatches = {'camera':[], 'camera_left':[], 'camera_right':[], 'camera_depth':[], 'laser_scan':[], 'imu':[], 'odometry':[]} # to hold topics with matching message types
 
 	# dictionary of score weights
@@ -82,12 +83,10 @@ def match_topic_types(items):
 		topicscores[score] = [0] * n
 		s = sum([j[1] for j in topictypes[score][1]])
 		for i in range(len(topicmatches[score])):
-			ad = False
 			for m in topictypes[score][1]: # add some to score if there's a keyword match
 				if m[0] in topicmatches[score][i]:
 					if m[0] != '':
 						topicscores[score][i] += 1/s * m[1]
-						ad = True
 
 	#print(topicscores) # positive scores
 
@@ -108,13 +107,16 @@ def match_topic_types(items):
 
 	assignment = {'camera':[], 'camera_left':[], 'camera_right':[], 'camera_depth':[], 'laser_scan':[], 'imu':[], 'odometry':[]} # final assignment
 	for score in topicscores: # assign topics
-		ss = [(topicscores[score][i], i) for i in range(len(topicscores[score]))]
-		s = reversed(sorted(ss))
-		for c in s:
-			idx = c[1]
+		scores = [(topicscores[score][i], i) for i in range(len(topicscores[score]))]
+		scores_sorted = reversed(sorted(scores))
+		for s in scores_sorted:
+			idx = s[1]
 			assignment[score].append(topicmatches[score][idx])
 
-	return assignment
+	with open(fileloc, 'w') as f:
+		f.write(json.dumps(assignment))
+
+	return json.dumps(assignment)
 
 #bag=rosbag.Bag("/home/user/data/2011-01-25-06-29-26.bag")
 #bag=rosbag.Bag("/home/user/data/2011-01-27-07-49-54.bag")
@@ -159,6 +161,5 @@ for k,vs in camera_frames.items():
 				total_cost += cost
 print(k.name,"->",v.name,total_cost)
 
-assignments = match_topic_types(topics.items())
-for a in assignments:
-	print(a, assignments[a])
+assignments = match_topic_types(topics.items(), 'ja.json')
+print(assignments)
