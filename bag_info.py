@@ -103,25 +103,30 @@ def match_topic_types(items, fileloc):
 						topicscores[score][i] -= 1 # if so, subtract from score
 						break
 
-	#print(topicscores) # includes positivee and negative scores
+	#print(topicscores) # includes positive and negative scores
 
 	assignment = {'camera':[], 'camera_left':[], 'camera_right':[], 'camera_depth':[], 'laser_scan':[], 'imu':[], 'odometry':[]} # final assignment
 	for score in topicscores: # assign topics
 		scores = [(topicscores[score][i], i) for i in range(len(topicscores[score]))]
-		scores_sorted = reversed(sorted(scores))
+		scores_sorted = sorted(scores, reverse=True)
 		for s in scores_sorted:
 			idx = s[1]
-			assignment[score].append(topicmatches[score][idx])
+			if score != 'camera_depth' or ('depth' in topicmatches[score][idx]): # don't add for depth camera unless 'depth' in name
+				assignment[score].append(topicmatches[score][idx])               # can alternatively recalculate positive score and check if above threshold
 
 	with open(fileloc, 'w') as f:
 		f.write(json.dumps(assignment))
 
+	'''print()
+	for a in assignment:
+		print(a, assignment[a])
+	print()'''
 	return json.dumps(assignment)
 
 #bag=rosbag.Bag("/home/user/data/2011-01-25-06-29-26.bag")
 #bag=rosbag.Bag("/home/user/data/2011-01-27-07-49-54.bag")
 #bag=rosbag.Bag("/home/user/data/2011-04-11-07-34-27.bag")
-bag=rosbag.Bag("/home/user/2011-01-24-06-18-27.bag")
+bag=rosbag.Bag("/home/user/V1_03_difficult.bag")
 topics = extract_topics(bag)
 #################################### print topics #############################################           
 tab = texttable.Texttable()                                                                   #
