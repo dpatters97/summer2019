@@ -185,7 +185,7 @@ def match_topic_types(bag):
 	for info in cam_info_topics:
 		best = (0,0)
 		for i in range(len(cam_topics)): # find the most similar topic name with type sensor_msgs/Image
-			sim = similar(info.lower(), cam_topics[i].lower())
+			sim = similar(info, cam_topics[i])
 			if sim > best[0]:
 				best = (sim, i)
 		info_assignment[info] = cam_topics[best[1]] # make assignment
@@ -195,23 +195,10 @@ def match_topic_types(bag):
 
 	return assignment
 
-def get_camera_info(bag, topic): # returns a dictionary of message attributes for topics with type CameraInfo
-	def str_to_dict(lines): # helper: turn a list of words separated by a colon into a dictionary
-		dct = {}
-		for line in lines: # loop over lines
-			split = line.split(':', 1) # split by the first colon
-			if split[1].strip() != '' and split[0][0] != ' ':
-				dct[split[0].strip()] = eval(split[1].strip()) # evaluate string and add to dictionary
-		return dct
-
+def get_camera_info(bag, topic): # returns a dictionary containing a CameraInfo message
 	cam_info = {}
 	for tp, msg, t in bag.read_messages(topics=[topic]): # loop over messages (will read only one message)
-		text = str(msg)
-		lines = text.split('\n')
-		cam_info = str_to_dict(lines[6:15]) # turn lines 6-14 of str(msg) into dictionary
-		cam_info['roi'] = str_to_dict((str(msg.roi)).split('\n')) # add dictionary properties to cam_info
-		cam_info['header'] = str_to_dict((str(msg.header)).split('\n'))
-		cam_info['header']['stamp'] = {'secs':msg.header.stamp.secs, 'nsecs':msg.header.stamp.nsecs}
+		cam_info['info'] = str(msg)
 		cam_info['topic'] = topic # DELETE; this is only to check if info topic and image topic were correctly matched
 		return cam_info
 
